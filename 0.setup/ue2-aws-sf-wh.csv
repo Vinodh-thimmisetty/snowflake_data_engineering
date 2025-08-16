@@ -1,0 +1,12 @@
+Name	API Name	Instance Family	Instance Memory	vCPUs	GiB of Memory per vCPU	Physical Processor	Clock Speed(GHz)	Arch	On Demand	Generation
+A1 Double Extra Large	a1.2xlarge	a1	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton Processor	2.3 GHz	arm64	₹18.9198 hourly	previous
+C6G Double Extra Large	c6g.2xlarge	c6g	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton2 Processor	2.5 GHz	arm64	₹25.2293 hourly	current
+C6GD Double Extra Large	c6gd.2xlarge	c6gd	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton2 Processor	2.5 GHz	arm64	₹28.4934 hourly	current
+C6GN Double Extra Large	c6gn.2xlarge	c6gn	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton2 Processor	2.5 GHz	arm64	₹33.268 hourly	current
+G5G Double Extra Large	g5g.2xlarge	g5g	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton2 Processor	2.5 GHz	arm64	unavailable	current
+C7G Double Extra Large	c7g.2xlarge	c7g	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton3 Processor	2.5 GHz	arm64	₹26.8833 hourly	current
+C7GD Double Extra Large	c7gd.2xlarge	c7gd	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton3 Processor	2.5 GHz	arm64	₹33.6653 hourly	current
+C7GN Double Extra Large	c7gn.2xlarge	c7gn	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton3 Processor	2.6 GHz	arm64	₹46.3106 hourly	current
+C8G Double Extra Large	c8g.2xlarge	c8g	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton4 Processor	2.7 GHz	arm64	₹30.6033 hourly	current
+C8GD Double Extra Large	c8gd.2xlarge	c8gd	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton4 Processor	2.7 GHz	arm64	₹37.7267 hourly	current
+C8GN Double Extra Large	c8gn.2xlarge	c8gn	16 GiB	8 vCPUs	2.00 GiB/vCPU	AWS Graviton4 Processor	2.7 GHz	arm64	unavailable	current

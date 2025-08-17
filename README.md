@@ -11,6 +11,7 @@ Own thoughts:
 Step#1: Project Idea & Plan  
 Step#2: Data Identification  
 Step#3: Data Governance Setup  
+Step#4 : Observability Setup  
 .....  
 Step#N-49: Data Cataloging  
 Step#N-50: Data Quality  

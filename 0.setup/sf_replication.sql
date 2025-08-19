@@ -73,7 +73,7 @@ $$
     NUM * NUM * NUM
 $$;
 
-CREATE OR REPLACE TEMPORARY STAGE PROVIDER_DB.READER_SCHEMA.MY_TEMP_STAGE
+CREATE OR REPLACE STAGE PROVIDER_DB.READER_SCHEMA.MY_TEMP_STAGE
   FILE_FORMAT = (TYPE = 'CSV' 
                 FIELD_DELIMITER = ',' 
                 SKIP_HEADER = 1 
@@ -96,9 +96,102 @@ CREATE OR REPLACE FILE FORMAT PROVIDER_DB.READER_SCHEMA.MY_CSV_FORMAT
   EMPTY_FIELD_AS_NULL = TRUE
   COMPRESSION = AUTO;
 
-CREATE OR REPLACE HYBRID TABLE PROVIDER_DB.READER_SCHEMA.CUSTOMER_HYBRID (
-    customer_id NUMBER,
-    name VARCHAR,
-    email VARCHAR,
-    signup_date DATE
-);
+CREATE OR REPLACE TASK PROVIDER_DB.READER_SCHEMA.DAILY_CREDIT_USAGE_REPORT
+  WAREHOUSE = TRANSFORM_WH
+  SCHEDULE = 'USING CRON 0 0 * * * America/Los_Angeles'
+AS
+  CALL SYSTEM$SEND_EMAIL(
+    'DAILY_CREDIT_USAGE_REPORT',
+    CURRENT_ACCOUNT(),
+    $$ 
+    SELECT 'Daily Credit Usage Report - ' || CURRENT_DATE() AS SUBJECT,
+    'Credit Usage for ' || CURRENT_DATE() || ':
+    ' || STRING_AGG(WAREHOUSE_NAME || ': ' || ROUND(CREDITS_USED,2) || ' credits', '
+    ')
+    FROM TABLE(INFORMATION_SCHEMA.WAREHOUSE_METERING_HISTORY(
+      DATE_TRUNC('DAY', CURRENT_TIMESTAMP())::DATE,
+      DATEADD('DAY', 1, CURRENT_TIMESTAMP())::DATE
+    ))
+    $$
+  );
+
+CREATE OR REPLACE PROCEDURE PROVIDER_DB.READER_SCHEMA.CALCULATE_SQUARE(num FLOAT)
+RETURNS FLOAT
+LANGUAGE SQL
+AS
+$$
+BEGIN
+    RETURN num * num;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE PROVIDER_DB.READER_SCHEMA.CALCULATE_CUBE(num FLOAT)
+RETURNS FLOAT
+LANGUAGE SQL
+AS
+$$
+BEGIN
+    RETURN num * num * num;
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE PROVIDER_DB.READER_SCHEMA.PROCESS_NUMBERS(NUMS ARRAY)
+RETURNS ARRAY
+LANGUAGE JAVASCRIPT
+AS
+$$
+  var result = [];
+  for (var i = 0; i < NUMS.length; i++) {
+    snowflake.log("info", "Processing number: " + NUMS[i]);
+    var stmt = snowflake.createStatement({
+      sqlText: "CALL PROVIDER_DB.READER_SCHEMA.CALCULATE_SQUARE(?)",
+      binds: [NUMS[i]]
+    });
+    var res = stmt.execute();
+    res.next();
+    sp_response = res.getColumnValue(1);
+    result.push(sp_response);
+    var warehouse_stmt = snowflake.createStatement({
+      sqlText: "SELECT QUERY_ID, WAREHOUSE_NAME FROM TABLE(INFORMATION_SCHEMA.QUERY_HISTORY_BY_SESSION()) WHERE QUERY_ID = (SELECT LAST_QUERY_ID())"
+    });
+    var wh_res = warehouse_stmt.execute();
+    wh_res.next();
+    var warehouse_used = wh_res.getColumnValue(1);
+    
+    snowflake.log("info", "Result for " + NUMS[i] + ": " + sp_response + " (Warehouse used: " + warehouse_used + ")");
+    
+  }
+  return result;
+$$;
+
+CALL process_numbers(ARRAY_CONSTRUCT(1,2,3));
+-- Returns: [1, 4, 9]
+
+
+
+-- alter account set event_table = snowflake.telemetry.events;
+-- show parameters like 'event_table' in account;
+
+CREATE OR REPLACE PROCEDURE sp_process_dealer(input_text STRING)
+RETURNS STRING
+LANGUAGE SQL
+AS
+$$
+BEGIN
+    RETURN UPPER(input_text);
+END;
+$$;
+
+
+CREATE OR REPLACE PROCEDURE sp_async_run_all_dealers() 
+RETURNS VARCHAR 
+LANGUAGE SQL
+AS BEGIN 
+ASYNC (CALL sp_process_dealer('Dealer1')); 
+ASYNC (CALL sp_process_dealer ('Dealer2')); -- Ensures all procs finish before returning ---- 
+AWAIT ALL; 
+RETURN 'Done (Async)'; 
+END;
+
+call sp_async_run_all_dealers();
+-- call sp_process_dealer('Vinodh');

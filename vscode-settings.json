@@ -1,0 +1,14 @@
+{
+  "github.copilot.editor.enableAutoCompletions": true,
+  "github.copilot.enable": {
+    "*": true
+  },
+  "github.copilot.advanced": {
+    "length": 500,
+    "temperature": 0.1
+  },
+  "github.copilot.chat.welcomeMessage": "Hello Vinodh!",
+  "files.associations": {
+    "copilot-instructions.md": "markdown"
+  }
+}

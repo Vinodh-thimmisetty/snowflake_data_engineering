@@ -3,6 +3,26 @@ use role accountadmin;
 ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'AWS_US';
 SHOW PARAMETERS LIKE 'CORTEX_ENABLED_CROSS_REGION' IN ACCOUNT;
 
+--  Direct Data Share: SAME CLOUD, SAME REGION, DIFFERENT ACCOUNT      
+--  Cross Data Share:  SAME CLOUD, DIFFERENT REGION, DIFFERENT ACCOUNT 
+--  Cross Data Share:  DIFFERENT CLOUD, DIFFERENT REGION, DIFFERENT ACCOUNT 
+
+-- DIRECTED DATA SHARE is supported only in SAME REGION with diff. Accounts. REPLICATION is mandatory for CROSS REGION or CLOUD for data sharing.
+-- READER ACCOUNT: SAME CLOUD, SAME REGION
+-- https://ymc12857.us-east-1.snowflakecomputing.com
+
+-- SAME REGION
+-- https://rgrdyng-same_region_ue1.snowflakecomputing.com
+-- https://iac62214.us-east-1.snowflakecomputing.com
+
+-- CROSS REGION
+-- https://rgrdyng-cross_region_ue2.snowflakecomputing.com
+-- https://vq95322.us-east-2.aws.snowflakecomputing.com
+
+-- CROSS CLOUD
+-- https://rgrdyng-cross_cloud_asia.snowflakecomputing.com
+-- https://sg36610.southeast-asia.azure.snowflakecomputing.com
+
 CREATE OR REPLACE DATABASE PROVIDER_DB;
 
 CREATE OR REPLACE SCHEMA READER_SCHEMA WITH MANAGED ACCESS;
@@ -23,14 +43,14 @@ CREATE OR REPLACE SEQUENCE PROVIDER_DB.READER_SCHEMA.SEQ_EVEN
     ORDER;
 
 CREATE OR REPLACE TABLE PROVIDER_DB.READER_SCHEMA.STANDARD_TABLE (
-    ID NUMBER(38,0) DEFAULT SEQ_ODD.NEXTVAL,
+    ID NUMBER(38,0) DEFAULT PROVIDER_DB.READER_SCHEMA.SEQ_ODD.NEXTVAL,
     TEXT_FIELD VARCHAR(100)
 ) 
 COMMENT = 'Standard table with odd sequence numbers'
 DATA_RETENTION_TIME_IN_DAYS = 1;
 
 CREATE OR REPLACE TRANSIENT TABLE PROVIDER_DB.READER_SCHEMA.TRANSIENT_TABLE (
-    ID NUMBER(38,0) DEFAULT SEQ_EVEN.NEXTVAL,
+    ID NUMBER(38,0) DEFAULT PROVIDER_DB.READER_SCHEMA.SEQ_EVEN.NEXTVAL,
     TEXT_FIELD VARCHAR(100)
 ) 
 COMMENT = 'Transient table with even sequence numbers'
@@ -38,8 +58,8 @@ DATA_RETENTION_TIME_IN_DAYS = 0;
 
 
 
-INSERT INTO STANDARD_TABLE(TEXT_FIELD) VALUES('a'), ('b'), ('c'), ('d'),('e');
-INSERT INTO TRANSIENT_TABLE(TEXT_FIELD) VALUES('a'), ('b'), ('c'), ('d'),('e');
+INSERT INTO PROVIDER_DB.READER_SCHEMA.STANDARD_TABLE(TEXT_FIELD) VALUES('a'), ('b'), ('c'), ('d'),('e');
+INSERT INTO PROVIDER_DB.READER_SCHEMA.TRANSIENT_TABLE(TEXT_FIELD) VALUES('a'), ('b'), ('c'), ('d'),('e');
 
 CREATE OR REPLACE VIEW PROVIDER_DB.READER_SCHEMA.STANDARD_VIEW AS 
 SELECT * FROM PROVIDER_DB.READER_SCHEMA.STANDARD_TABLE 
@@ -97,7 +117,7 @@ CREATE OR REPLACE FILE FORMAT PROVIDER_DB.READER_SCHEMA.MY_CSV_FORMAT
   COMPRESSION = AUTO;
 
 CREATE OR REPLACE TASK PROVIDER_DB.READER_SCHEMA.DAILY_CREDIT_USAGE_REPORT
-  WAREHOUSE = TRANSFORM_WH
+  WAREHOUSE = COMP
   SCHEDULE = 'USING CRON 0 0 * * * America/Los_Angeles'
 AS
   CALL SYSTEM$SEND_EMAIL(
@@ -125,6 +145,8 @@ BEGIN
 END;
 $$;
 
+-- CALL PROVIDER_DB.READER_SCHEMA.CALCULATE_SQUARE(10);
+
 CREATE OR REPLACE PROCEDURE PROVIDER_DB.READER_SCHEMA.CALCULATE_CUBE(num FLOAT)
 RETURNS FLOAT
 LANGUAGE SQL
@@ -151,6 +173,7 @@ $$
     res.next();
     sp_response = res.getColumnValue(1);
     result.push(sp_response);
+    /*
     var warehouse_stmt = snowflake.createStatement({
       sqlText: "SELECT QUERY_ID, WAREHOUSE_NAME FROM TABLE(INFORMATION_SCHEMA.QUERY_HISTORY_BY_SESSION()) WHERE QUERY_ID = (SELECT LAST_QUERY_ID())"
     });
@@ -159,20 +182,16 @@ $$
     var warehouse_used = wh_res.getColumnValue(1);
     
     snowflake.log("info", "Result for " + NUMS[i] + ": " + sp_response + " (Warehouse used: " + warehouse_used + ")");
-    
+    */
   }
   return result;
 $$;
 
-CALL process_numbers(ARRAY_CONSTRUCT(1,2,3));
+CALL PROVIDER_DB.READER_SCHEMA.PROCESS_NUMBERS(ARRAY_CONSTRUCT(1,2,3));
 -- Returns: [1, 4, 9]
 
 
-
--- alter account set event_table = snowflake.telemetry.events;
--- show parameters like 'event_table' in account;
-
-CREATE OR REPLACE PROCEDURE sp_process_dealer(input_text STRING)
+CREATE OR REPLACE PROCEDURE PROVIDER_DB.READER_SCHEMA.sp_process_child(input_text STRING)
 RETURNS STRING
 LANGUAGE SQL
 AS
@@ -183,15 +202,16 @@ END;
 $$;
 
 
-CREATE OR REPLACE PROCEDURE sp_async_run_all_dealers() 
+CREATE OR REPLACE PROCEDURE PROVIDER_DB.READER_SCHEMA.sp_async_run_all_customers() 
 RETURNS VARCHAR 
 LANGUAGE SQL
 AS BEGIN 
-ASYNC (CALL sp_process_dealer('Dealer1')); 
-ASYNC (CALL sp_process_dealer ('Dealer2')); -- Ensures all procs finish before returning ---- 
+ASYNC (CALL sp_process_child('Customer1')); 
+ASYNC (CALL sp_process_child ('Customer2')); 
+-- Ensures all procs finish before returning ---- 
 AWAIT ALL; 
 RETURN 'Done (Async)'; 
 END;
 
-call sp_async_run_all_dealers();
--- call sp_process_dealer('Vinodh');
+-- call PROVIDER_DB.READER_SCHEMA.sp_async_run_all_customers();
+-- call PROVIDER_DB.READER_SCHEMA.sp_process_child('Vinodh');

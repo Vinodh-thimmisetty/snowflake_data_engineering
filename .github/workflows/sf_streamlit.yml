@@ -1,0 +1,36 @@
+name: Deploy Streamlit App using Snowflake CLI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: 3.11
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout the Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6.0.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Snowflake CLI
+        uses: snowflakedb/snowflake-cli-action@v1.5        
+      
+      - name: Copy Snowflake Password to Config
+        env:
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWCLI_PW }}
+        run: |
+          cp config.toml ~/.snowflake/config.toml
+          echo "password = \"$SNOWFLAKE_PASSWORD\"" >> ~/.snowflake/config.toml
+          chmod 0600 ~/.snowflake/config.toml
